@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Mafia Game</title>
+<style>
+body {
+  background: #111;
+  color: #0f0;
+  font-family: monospace;
+  text-align: center;
+}
+button {
+  padding: 10px;
+  margin: 5px;
+  background: black;
+  color: #0f0;
+  border: 1px solid #0f0;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<h1>🕶️ Mafia Simulator</h1>
+
+<p>💰 Geld: <span id="money">0</span></p>
+<p>💪 Power: <span id="power">1</span></p>
+<p>🧑 Workers: <span id="workers">0</span></p>
+<p>❤️ Health: <span id="health">100</span></p>
+<p>🚗 Auto’s: <span id="cars">0</span></p>
+
+<button onclick="werk()">Werk</button>
+<button onclick="huur()">Huur worker (€50)</button>
+<button onclick="maakProduct()">Produceer</button>
+
+<hr>
+
+<button onclick="steelAuto()">🚗 Steel Auto</button>
+<button onclick="vecht()">⚔️ Vecht</button>
+<button onclick="heal()">❤️ Heal (€30)</button>
+
+<script>
+let money = 100;
+let power = 1;
+let workers = 0;
+let health = 100;
+let cars = 0;
+
+function update() {
+  document.getElementById("money").innerText = money;
+  document.getElementById("power").innerText = power;
+  document.getElementById("workers").innerText = workers;
+  document.getElementById("health").innerText = health;
+  document.getElementById("cars").innerText = cars;
+}
+
+// BASIS
+function werk() {
+  money += power;
+  update();
+}
+
+function huur() {
+  if (money >= 50) {
+    money -= 50;
+    workers++;
+    power += 2;
+    update();
+  }
+}
+
+function maakProduct() {
+  if (money >= 10) {
+    money -= 10;
+    setTimeout(() => {
+      money += 30 + workers * 5;
+      update();
+    }, 2000);
+  }
+}
+
+// 🚗 AUTO STELEN
+function steelAuto() {
+  let kans = Math.random();
+
+  if (kans > 0.5) {
+    cars++;
+    money += 50;
+    alert("Succes! Auto gestolen 🚗");
+  } else {
+    health -= 20;
+    alert("Mislukt! Politie zag je 👮");
+  }
+
+  update();
+}
+
+// ⚔️ VECHTEN
+function vecht() {
+  let enemyPower = Math.floor(Math.random() * 10) + 1;
+  let jouwPower = power + cars * 2;
+
+  if (jouwPower > enemyPower) {
+    let winst = Math.floor(Math.random() * 100) + 20;
+    money += winst;
+    alert("Gewonnen! +" + winst + "€");
+  } else {
+    let damage = Math.floor(Math.random() * 30) + 10;
+    health -= damage;
+    alert("Verloren! -" + damage + " health");
+  }
+
+  checkDood();
+  update();
+}
+
+// ❤️ HEAL
+function heal() {
+  if (money >= 30) {
+    money -= 30;
+    health += 20;
+    if (health > 100) health = 100;
+    update();
+  }
+}
+
+// ☠️ DOOD
+function checkDood() {
+  if (health <= 0) {
+    alert("Je bent dood 💀 Game reset!");
+    money = 100;
+    power = 1;
+    workers = 0;
+    health = 100;
+    cars = 0;
+  }
+}
+
+// AUTO INCOME
+setInterval(() => {
+  money += workers;
+  update();
+}, 3000);
+
+// SAVE
+function save() {
+  localStorage.setItem("mafiaSave", JSON.stringify({
+    money, power, workers, health, cars
+  }));
+}
+
+function load() {
+  let data = JSON.parse(localStorage.getItem("mafiaSave"));
+  if (data) {
+    money = data.money;
+    power = data.power;
+    workers = data.workers;
+    health = data.health;
+    cars = data.cars;
+  }
+}
+
+setInterval(save, 5000);
+
+load();
+update();
+</script>
+
+</body>
+</html>
