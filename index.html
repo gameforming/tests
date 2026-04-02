@@ -2,7 +2,8 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>Mafia Game</title>
+<title>Mafia Simulator</title>
+
 <style>
 body {
   background: #111;
@@ -10,6 +11,7 @@ body {
   font-family: monospace;
   text-align: center;
 }
+
 button {
   padding: 10px;
   margin: 5px;
@@ -18,8 +20,13 @@ button {
   border: 1px solid #0f0;
   cursor: pointer;
 }
+
+hr {
+  border: 1px solid #0f0;
+}
 </style>
 </head>
+
 <body>
 
 <h1>🕶️ Mafia Simulator</h1>
@@ -30,32 +37,62 @@ button {
 <p>❤️ Health: <span id="health">100</span></p>
 <p>🚗 Auto’s: <span id="cars">0</span></p>
 
-<button onclick="werk()">Werk</button>
-<button onclick="huur()">Huur worker (€50)</button>
-<button onclick="maakProduct()">Produceer</button>
+<hr>
+
+<h2>🧪 Drug Lab</h2>
+<p>Chemicals: <span id="chemicals">0</span></p>
+<p>Drugs: <span id="drugs">0</span></p>
+<p>Lab Level: <span id="labLevel">1</span></p>
+
+<button onclick="koopChemicals()">Koop Chemicals (€20)</button>
+<button onclick="produceerDrugs()">Produceer Drugs</button>
+<button onclick="verkoopDrugs()">Verkoop Drugs</button>
+<button onclick="upgradeLab()">Upgrade Lab</button>
 
 <hr>
 
-<button onclick="steelAuto()">🚗 Steel Auto</button>
-<button onclick="vecht()">⚔️ Vecht</button>
-<button onclick="heal()">❤️ Heal (€30)</button>
+<h2>💼 Acties</h2>
+
+<button onclick="werk()">Werk</button>
+<button onclick="huur()">Huur worker (€50)</button>
+<button onclick="maakProduct()">Produceer (basic)</button>
+
+<hr>
+
+<h2>🚗 Crime</h2>
+
+<button onclick="steelAuto()">Steel Auto</button>
+<button onclick="vecht()">Vecht</button>
+<button onclick="heal()">Heal (€30)</button>
 
 <script>
+
+// BASIS
 let money = 100;
 let power = 1;
 let workers = 0;
 let health = 100;
 let cars = 0;
 
+// DRUGS
+let chemicals = 0;
+let drugs = 0;
+let labLevel = 1;
+
+// UPDATE UI
 function update() {
   document.getElementById("money").innerText = money;
   document.getElementById("power").innerText = power;
   document.getElementById("workers").innerText = workers;
   document.getElementById("health").innerText = health;
   document.getElementById("cars").innerText = cars;
+
+  document.getElementById("chemicals").innerText = chemicals;
+  document.getElementById("drugs").innerText = drugs;
+  document.getElementById("labLevel").innerText = labLevel;
 }
 
-// BASIS
+// BASIS ACTIES
 function werk() {
   money += power;
   update();
@@ -93,6 +130,7 @@ function steelAuto() {
     alert("Mislukt! Politie zag je 👮");
   }
 
+  checkDood();
   update();
 }
 
@@ -128,25 +166,79 @@ function heal() {
 // ☠️ DOOD
 function checkDood() {
   if (health <= 0) {
-    alert("Je bent dood 💀 Game reset!");
+    alert("Je bent dood 💀 Reset!");
     money = 100;
     power = 1;
     workers = 0;
     health = 100;
     cars = 0;
+    chemicals = 0;
+    drugs = 0;
+    labLevel = 1;
   }
 }
 
-// AUTO INCOME
+// 🧪 DRUGS SYSTEM
+function koopChemicals() {
+  if (money >= 20) {
+    money -= 20;
+    chemicals++;
+    update();
+  }
+}
+
+function produceerDrugs() {
+  if (chemicals >= 2) {
+    chemicals -= 2;
+
+    let tijd = 3000 / labLevel;
+
+    setTimeout(() => {
+      let output = labLevel;
+      drugs += output;
+      alert("Productie klaar! +" + output);
+      update();
+    }, tijd);
+
+  } else {
+    alert("Niet genoeg chemicals!");
+  }
+}
+
+function verkoopDrugs() {
+  if (drugs > 0) {
+    let prijs = 50 + Math.floor(Math.random() * 50);
+    let winst = drugs * prijs;
+    money += winst;
+    drugs = 0;
+
+    alert("Verkocht voor €" + winst);
+    update();
+  }
+}
+
+function upgradeLab() {
+  let cost = 200 * labLevel;
+
+  if (money >= cost) {
+    money -= cost;
+    labLevel++;
+    alert("Lab upgraded!");
+    update();
+  }
+}
+
+// PASSIVE INCOME
 setInterval(() => {
   money += workers;
   update();
 }, 3000);
 
-// SAVE
+// SAVE SYSTEM
 function save() {
   localStorage.setItem("mafiaSave", JSON.stringify({
-    money, power, workers, health, cars
+    money, power, workers, health, cars,
+    chemicals, drugs, labLevel
   }));
 }
 
@@ -158,6 +250,9 @@ function load() {
     workers = data.workers;
     health = data.health;
     cars = data.cars;
+    chemicals = data.chemicals;
+    drugs = data.drugs;
+    labLevel = data.labLevel;
   }
 }
 
@@ -165,6 +260,7 @@ setInterval(save, 5000);
 
 load();
 update();
+
 </script>
 
 </body>
