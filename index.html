@@ -143,11 +143,17 @@
     // init render
     renderAll();
 
-    // server load
     socket.on("load_messages", (serverMessages) => {
+
+    // alleen eerste keer laden als localStorage leeg is
+    if (messages.length === 0) {
+
       messages = serverMessages.slice(-100);
+
       save();
       renderAll();
+    }
+
     });
 
     // incoming message
