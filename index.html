@@ -106,8 +106,8 @@
     const messageInput = document.getElementById("messageInput");
     const nameInput = document.getElementById("nameInput");
 
-    // LOCALSTORAGE LOAD
-    let messages = JSON.parse(localStorage.getItem("messages") || "[]");
+    // LOCALSTORAGE
+    let localMessages = JSON.parse(localStorage.getItem("messages") || "[]");
 
     nameInput.value = localStorage.getItem("chat_name") || "";
 
@@ -115,13 +115,8 @@
       localStorage.setItem("chat_name", nameInput.value);
     });
 
-    function saveMessages() {
-      localStorage.setItem("messages", JSON.stringify(messages));
-    }
-
-    function renderMessages() {
-      messagesDiv.innerHTML = "";
-      messages.forEach(addMessage);
+    function saveLocal() {
+      localStorage.setItem("messages", JSON.stringify(localMessages));
     }
 
     function addMessage(data) {
@@ -139,15 +134,19 @@
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
-    renderMessages();
+    function renderAll() {
+      messagesDiv.innerHTML = "";
+      localMessages.forEach(addMessage);
+    }
 
-    socket.on("load_messages", (serverMessages) => {
+    renderAll();
 
-      // merge server + local (veiligste aanpak)
-      messages = serverMessages.slice(-100);
+    // ORIGINELE WORKFLOW (NIET AANGERAAT)
+    socket.on("load_messages", (messages) => {
 
-      saveMessages();
-      renderMessages();
+      localMessages = messages.slice(-100);
+      saveLocal();
+      renderAll();
     });
 
     socket.on("chat_message", (data) => {
@@ -157,16 +156,17 @@
         ...data
       };
 
-      messages.push(msg);
+      localMessages.push(msg);
 
-      if (messages.length > 100) {
-        messages = messages.slice(-100);
+      if (localMessages.length > 100) {
+        localMessages = localMessages.slice(-100);
       }
 
-      saveMessages();
+      saveLocal();
       addMessage(msg);
     });
 
+    // EXACT ORIGINELE SEND LOGICA
     function sendMessage() {
       const name = nameInput.value.trim();
       const message = messageInput.value.trim();
@@ -181,13 +181,11 @@
       messageInput.value = "";
     }
 
+    // LOCAL DELETE ONLY
     function deleteMessage(id) {
-
-      // alleen lokaal verwijderen
-      messages = messages.filter(m => m.id !== id);
-
-      saveMessages();
-      renderMessages();
+      localMessages = localMessages.filter(m => m.id !== id);
+      saveLocal();
+      renderAll();
     }
 
     messageInput.addEventListener("keydown", (e) => {
