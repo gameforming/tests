@@ -15,6 +15,7 @@ io.on("connection", (socket) => {
   socket.emit("load_messages", messages);
 
   socket.on("chat_message", (data) => {
+
     messages.push(data);
 
     if (messages.length > 100) {
