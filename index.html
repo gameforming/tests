@@ -22,12 +22,23 @@
       border-bottom: 1px solid #333;
     }
 
-    #nameInput {
+    #nameInput, #adminPass {
       width: 200px;
       padding: 8px;
       background: #222;
       color: white;
       border: 1px solid #444;
+      margin-top: 5px;
+    }
+
+    #adminBtn {
+      margin-top: 5px;
+      padding: 6px 10px;
+      background: gold;
+      color: black;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
     }
 
     #messages {
@@ -46,6 +57,21 @@
     .name {
       font-weight: bold;
       color: #4da3ff;
+    }
+
+    .crown {
+      color: gold;
+      margin-left: 5px;
+    }
+
+    .deleteBtn {
+      margin-top: 5px;
+      background: red;
+      border: none;
+      color: white;
+      padding: 5px 8px;
+      cursor: pointer;
+      border-radius: 5px;
     }
 
     #bottom {
@@ -78,6 +104,11 @@
   <div id="topbar">
     Naam:
     <input id="nameInput" placeholder="jouw naam">
+
+    <br>
+
+    <input id="adminPass" type="password" placeholder="admin wachtwoord">
+    <button id="adminBtn">Login als admin</button>
   </div>
 
   <div id="messages"></div>
@@ -95,6 +126,10 @@
     const messagesDiv = document.getElementById("messages");
     const messageInput = document.getElementById("messageInput");
     const nameInput = document.getElementById("nameInput");
+    const adminPass = document.getElementById("adminPass");
+    const adminBtn = document.getElementById("adminBtn");
+
+    let isAdmin = localStorage.getItem("isAdmin") === "true";
 
     nameInput.value = localStorage.getItem("chat_name") || "";
 
@@ -102,13 +137,27 @@
       localStorage.setItem("chat_name", nameInput.value);
     });
 
+    adminBtn.onclick = () => {
+      if (adminPass.value === "nederlandbeste!!47") {
+        isAdmin = true;
+        localStorage.setItem("isAdmin", "true");
+        alert("Je bent nu admin 👑");
+      } else {
+        alert("Fout wachtwoord");
+      }
+    };
+
     function addMessage(data) {
       const div = document.createElement("div");
       div.className = "msg";
+      div.dataset.id = data.id;
+
+      let crown = data.isAdmin ? `<span class="crown">👑</span>` : "";
 
       div.innerHTML = `
-        <div class="name">${data.name}</div>
+        <div class="name">${data.name} ${crown}</div>
         <div>${data.message}</div>
+        ${isAdmin ? `<button class="deleteBtn" onclick="deleteMessage('${data.id}')">🗑️</button>` : ""}
       `;
 
       messagesDiv.appendChild(div);
@@ -124,6 +173,11 @@
       addMessage(data);
     });
 
+    socket.on("message_deleted", (id) => {
+      const el = document.querySelector(`[data-id="${id}"]`);
+      if (el) el.remove();
+    });
+
     function sendMessage() {
       const name = nameInput.value.trim();
       const message = messageInput.value.trim();
@@ -131,11 +185,20 @@
       if (!name || !message) return;
 
       socket.emit("chat_message", {
+        id: Date.now().toString(),
         name,
-        message
+        message,
+        isAdmin
       });
 
       messageInput.value = "";
+    }
+
+    function deleteMessage(id) {
+      socket.emit("delete_message", {
+        id,
+        isAdmin
+      });
     }
 
     messageInput.addEventListener("keydown", (e) => {
