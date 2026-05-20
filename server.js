@@ -8,14 +8,22 @@ const io = new Server(server);
 
 app.use(express.static(__dirname));
 
+let messages = [];
+
 io.on("connection", (socket) => {
 
-  socket.on("chat_message", (data) => {
-    io.emit("chat_message", data);
-  });
+  socket.emit("load_messages", messages);
 
-  socket.on("delete_message", (id) => {
-    io.emit("message_deleted", id);
+  socket.on("chat_message", (data) => {
+
+    messages.push(data);
+
+    // keep only last 100 messages
+    if (messages.length > 100) {
+      messages.splice(0, messages.length - 100);
+    }
+
+    io.emit("chat_message", data);
   });
 
 });
