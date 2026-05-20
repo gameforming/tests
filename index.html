@@ -1,267 +1,156 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8">
-<title>Mafia Simulator</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Group Chat</title>
 
-<style>
-body {
-  background: #111;
-  color: #0f0;
-  font-family: monospace;
-  text-align: center;
-}
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
 
-button {
-  padding: 10px;
-  margin: 5px;
-  background: black;
-  color: #0f0;
-  border: 1px solid #0f0;
-  cursor: pointer;
-}
+    #topbar {
+      padding: 10px;
+      background: #1b1b1b;
+      border-bottom: 1px solid #333;
+    }
 
-hr {
-  border: 1px solid #0f0;
-}
-</style>
+    #nameInput {
+      width: 200px;
+      padding: 8px;
+      background: #222;
+      color: white;
+      border: 1px solid #444;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .msg {
+      margin-bottom: 10px;
+      background: #1e1e1e;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .name {
+      font-weight: bold;
+      color: #4da3ff;
+    }
+
+    #bottom {
+      display: flex;
+      padding: 10px;
+      gap: 10px;
+      background: #1b1b1b;
+    }
+
+    #messageInput {
+      flex: 1;
+      padding: 10px;
+      background: #222;
+      color: white;
+      border: 1px solid #444;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #4da3ff;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
 </head>
-
 <body>
 
-<h1>🕶️ Mafia Simulator</h1>
+  <div id="topbar">
+    Naam:
+    <input id="nameInput" placeholder="jouw naam">
+  </div>
 
-<p>💰 Geld: <span id="money">0</span></p>
-<p>💪 Power: <span id="power">1</span></p>
-<p>🧑 Workers: <span id="workers">0</span></p>
-<p>❤️ Health: <span id="health">100</span></p>
-<p>🚗 Auto’s: <span id="cars">0</span></p>
+  <div id="messages"></div>
 
-<hr>
+  <div id="bottom">
+    <input id="messageInput" placeholder="bericht">
+    <button onclick="sendMessage()">Send</button>
+  </div>
 
-<h2>🧪 Drug Lab</h2>
-<p>Chemicals: <span id="chemicals">0</span></p>
-<p>Drugs: <span id="drugs">0</span></p>
-<p>Lab Level: <span id="labLevel">1</span></p>
+  <script src="/socket.io/socket.io.js"></script>
 
-<button onclick="koopChemicals()">Koop Chemicals (€20)</button>
-<button onclick="produceerDrugs()">Produceer Drugs</button>
-<button onclick="verkoopDrugs()">Verkoop Drugs</button>
-<button onclick="upgradeLab()">Upgrade Lab</button>
+  <script>
+    const socket = io();
 
-<hr>
+    const messagesDiv = document.getElementById("messages");
+    const messageInput = document.getElementById("messageInput");
+    const nameInput = document.getElementById("nameInput");
 
-<h2>💼 Acties</h2>
+    // naam opslaan
+    nameInput.value = localStorage.getItem("chat_name") || "";
 
-<button onclick="werk()">Werk</button>
-<button onclick="huur()">Huur worker (€50)</button>
-<button onclick="maakProduct()">Produceer (basic)</button>
+    nameInput.addEventListener("input", () => {
+      localStorage.setItem("chat_name", nameInput.value);
+    });
 
-<hr>
+    // berichten tonen
+    function addMessage(data) {
+      const div = document.createElement("div");
+      div.className = "msg";
 
-<h2>🚗 Crime</h2>
+      div.innerHTML = `
+        <div class="name">${data.name}</div>
+        <div>${data.message}</div>
+      `;
 
-<button onclick="steelAuto()">Steel Auto</button>
-<button onclick="vecht()">Vecht</button>
-<button onclick="heal()">Heal (€30)</button>
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
 
-<script>
+    // oude berichten laden
+    socket.on("load_messages", (messages) => {
+      messagesDiv.innerHTML = "";
 
-// BASIS
-let money = 100;
-let power = 1;
-let workers = 0;
-let health = 100;
-let cars = 0;
+      messages.forEach(addMessage);
+    });
 
-// DRUGS
-let chemicals = 0;
-let drugs = 0;
-let labLevel = 1;
+    // nieuw bericht
+    socket.on("chat_message", (data) => {
+      addMessage(data);
+    });
 
-// UPDATE UI
-function update() {
-  document.getElementById("money").innerText = money;
-  document.getElementById("power").innerText = power;
-  document.getElementById("workers").innerText = workers;
-  document.getElementById("health").innerText = health;
-  document.getElementById("cars").innerText = cars;
+    // sturen
+    function sendMessage() {
+      const name = nameInput.value.trim();
+      const message = messageInput.value.trim();
 
-  document.getElementById("chemicals").innerText = chemicals;
-  document.getElementById("drugs").innerText = drugs;
-  document.getElementById("labLevel").innerText = labLevel;
-}
+      if (!name || !message) return;
 
-// BASIS ACTIES
-function werk() {
-  money += power;
-  update();
-}
+      socket.emit("chat_message", {
+        name,
+        message
+      });
 
-function huur() {
-  if (money >= 50) {
-    money -= 50;
-    workers++;
-    power += 2;
-    update();
-  }
-}
+      messageInput.value = "";
+    }
 
-function maakProduct() {
-  if (money >= 10) {
-    money -= 10;
-    setTimeout(() => {
-      money += 30 + workers * 5;
-      update();
-    }, 2000);
-  }
-}
-
-// 🚗 AUTO STELEN
-function steelAuto() {
-  let kans = Math.random();
-
-  if (kans > 0.5) {
-    cars++;
-    money += 50;
-    alert("Succes! Auto gestolen 🚗");
-  } else {
-    health -= 20;
-    alert("Mislukt! Politie zag je 👮");
-  }
-
-  checkDood();
-  update();
-}
-
-// ⚔️ VECHTEN
-function vecht() {
-  let enemyPower = Math.floor(Math.random() * 10) + 1;
-  let jouwPower = power + cars * 2;
-
-  if (jouwPower > enemyPower) {
-    let winst = Math.floor(Math.random() * 100) + 20;
-    money += winst;
-    alert("Gewonnen! +" + winst + "€");
-  } else {
-    let damage = Math.floor(Math.random() * 30) + 10;
-    health -= damage;
-    alert("Verloren! -" + damage + " health");
-  }
-
-  checkDood();
-  update();
-}
-
-// ❤️ HEAL
-function heal() {
-  if (money >= 30) {
-    money -= 30;
-    health += 20;
-    if (health > 100) health = 100;
-    update();
-  }
-}
-
-// ☠️ DOOD
-function checkDood() {
-  if (health <= 0) {
-    alert("Je bent dood 💀 Reset!");
-    money = 100;
-    power = 1;
-    workers = 0;
-    health = 100;
-    cars = 0;
-    chemicals = 0;
-    drugs = 0;
-    labLevel = 1;
-  }
-}
-
-// 🧪 DRUGS SYSTEM
-function koopChemicals() {
-  if (money >= 20) {
-    money -= 20;
-    chemicals++;
-    update();
-  }
-}
-
-function produceerDrugs() {
-  if (chemicals >= 2) {
-    chemicals -= 2;
-
-    let tijd = 3000 / labLevel;
-
-    setTimeout(() => {
-      let output = labLevel;
-      drugs += output;
-      alert("Productie klaar! +" + output);
-      update();
-    }, tijd);
-
-  } else {
-    alert("Niet genoeg chemicals!");
-  }
-}
-
-function verkoopDrugs() {
-  if (drugs > 0) {
-    let prijs = 50 + Math.floor(Math.random() * 50);
-    let winst = drugs * prijs;
-    money += winst;
-    drugs = 0;
-
-    alert("Verkocht voor €" + winst);
-    update();
-  }
-}
-
-function upgradeLab() {
-  let cost = 200 * labLevel;
-
-  if (money >= cost) {
-    money -= cost;
-    labLevel++;
-    alert("Lab upgraded!");
-    update();
-  }
-}
-
-// PASSIVE INCOME
-setInterval(() => {
-  money += workers;
-  update();
-}, 3000);
-
-// SAVE SYSTEM
-function save() {
-  localStorage.setItem("mafiaSave", JSON.stringify({
-    money, power, workers, health, cars,
-    chemicals, drugs, labLevel
-  }));
-}
-
-function load() {
-  let data = JSON.parse(localStorage.getItem("mafiaSave"));
-  if (data) {
-    money = data.money;
-    power = data.power;
-    workers = data.workers;
-    health = data.health;
-    cars = data.cars;
-    chemicals = data.chemicals;
-    drugs = data.drugs;
-    labLevel = data.labLevel;
-  }
-}
-
-setInterval(save, 5000);
-
-load();
-update();
-
-</script>
+    // enter
+    messageInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+  </script>
 
 </body>
 </html>
