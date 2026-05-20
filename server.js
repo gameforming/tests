@@ -16,13 +16,19 @@ io.on("connection", (socket) => {
 
   socket.on("chat_message", (data) => {
 
-    messages.push(data);
+    const msg = {
+      id: Date.now().toString(),
+      name: data.name,
+      message: data.message
+    };
+
+    messages.push(msg);
 
     if (messages.length > 100) {
-      messages.splice(0, messages.length - 100);
+      messages = messages.slice(-100);
     }
 
-    io.emit("chat_message", data);
+    io.emit("chat_message", msg);
   });
 
 });
