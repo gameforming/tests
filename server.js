@@ -18,12 +18,22 @@ io.on("connection", (socket) => {
 
     messages.push(data);
 
-    // keep only last 100 messages
     if (messages.length > 100) {
       messages.splice(0, messages.length - 100);
     }
 
     io.emit("chat_message", data);
+  });
+
+  // 🗑️ alleen admin mag delete uitvoeren
+  socket.on("delete_message", (data) => {
+    const { id, isAdmin } = data;
+
+    if (!isAdmin) return; // blokkeren als geen admin
+
+    messages = messages.filter(m => m.id !== id);
+
+    io.emit("message_deleted", id);
   });
 
 });
