@@ -16,28 +16,32 @@ io.on("connection", (socket) => {
 
   socket.on("chat_message", (data) => {
 
-    messages.push(data);
+    const msg = {
+      id: Date.now().toString(),
+      name: data.name,
+      message: data.message,
+      isAdmin: data.isAdmin || false
+    };
+
+    messages.push(msg);
 
     if (messages.length > 100) {
-      messages.splice(0, messages.length - 100);
+      messages = messages.slice(-100);
     }
 
-    io.emit("chat_message", data);
+    io.emit("chat_message", msg);
   });
 
-  // 🗑️ alleen admin mag delete uitvoeren
   socket.on("delete_message", (data) => {
-    const { id, isAdmin } = data;
+    if (!data.isAdmin) return;
 
-    if (!isAdmin) return; // blokkeren als geen admin
+    messages = messages.filter(m => m.id !== data.id);
 
-    messages = messages.filter(m => m.id !== id);
-
-    io.emit("message_deleted", id);
+    io.emit("message_deleted", data.id);
   });
 
 });
 
 server.listen(3000, () => {
-  console.log("server running");
+  console.log("server running on port 3000");
 });
