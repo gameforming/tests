@@ -131,6 +131,7 @@
 
     let isAdmin = localStorage.getItem("isAdmin") === "true";
 
+    // naam altijd correct laden
     nameInput.value = localStorage.getItem("chat_name") || "";
 
     nameInput.addEventListener("input", () => {
@@ -141,7 +142,7 @@
       if (adminPass.value === "nederlandbeste!!47") {
         isAdmin = true;
         localStorage.setItem("isAdmin", "true");
-        alert("Je bent nu admin 👑");
+        alert("Je bent admin 👑");
       } else {
         alert("Fout wachtwoord");
       }
@@ -152,10 +153,8 @@
       div.className = "msg";
       div.dataset.id = data.id;
 
-      let crown = data.isAdmin ? `<span class="crown">👑</span>` : "";
-
       div.innerHTML = `
-        <div class="name">${data.name} ${crown}</div>
+        <div class="name">${data.name} ${data.isAdmin ? "👑" : ""}</div>
         <div>${data.message}</div>
         ${isAdmin ? `<button class="deleteBtn" onclick="deleteMessage('${data.id}')">🗑️</button>` : ""}
       `;
@@ -185,7 +184,6 @@
       if (!name || !message) return;
 
       socket.emit("chat_message", {
-        id: Date.now().toString(),
         name,
         message,
         isAdmin
@@ -202,9 +200,7 @@
     }
 
     messageInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        sendMessage();
-      }
+      if (e.key === "Enter") sendMessage();
     });
   </script>
 
